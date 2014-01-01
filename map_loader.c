@@ -91,48 +91,48 @@ struct layers *load_layers(json_t *layers) {
 	struct layers *layers_list = (struct layers *) calloc(1, sizeof(layers_list));
 
 	for(i = 0; i < json_array_size(layers); i++) {
-    	json_t *layer, *height, *width, *visible, *data;
-    	struct layers_element *element = (struct layers_element *) calloc(
-    		1, sizeof(element)
-    		);
+		json_t *layer, *height, *width, *visible, *data;
+		struct layers_element *element = (struct layers_element *) calloc(
+			1, sizeof(element)
+			);
 
-    	struct layer *current = (struct layer *) calloc(1, sizeof(current));
-    	element->current = current;
+		struct layer *current = (struct layer *) calloc(1, sizeof(current));
+		element->current = current;
 
-    	layer = json_array_get(layers, i);
+		layer = json_array_get(layers, i);
 
-    	height = json_object_get(layer, "height");
-    	current->height = (int) json_integer_value(height);
+		height = json_object_get(layer, "height");
+		current->height = (int) json_integer_value(height);
 
-    	width = json_object_get(layer, "height");
-    	current->width = (int) json_integer_value(width);
+		width = json_object_get(layer, "height");
+		current->width = (int) json_integer_value(width);
 
-    	visible = json_object_get(layer, "visible");
-    	current->visible = (int) json_integer_value(visible);
+		visible = json_object_get(layer, "visible");
+		current->visible = (int) json_integer_value(visible);
 
-    	data = json_object_get(layer, "data");
-    	if (json_is_array(data)) {
-    		printf("have map data.\n");
-    	}
+		data = json_object_get(layer, "data");
+		if (json_is_array(data)) {
+			printf("have map data.\n");
+		}
 
-    	current->data = allocate_layer_array(
-    		current->width, current->height, data);
+		current->data = allocate_layer_array(aw
+			current->width, current->height, data);
 
-    	if (layers_list->head == NULL) {
-    		layers_list->head = element;
-    		layers_list->tail = element;
-    		layers_list->size = 1;
-    	}
+		if (layers_list->head == NULL) {
+			layers_list->head = element;
+			layers_list->tail = element;
+			layers_list->size = 1;
+		}
 
-    	else {
-    		layers_list->tail->next = element;
-    		element->previous = layers_list->tail;
-    		layers_list->tail = element;
-    		layers_list->size++;
-    	}
-    }
+		else {
+			layers_list->tail->next = element;
+			element->previous = layers_list->tail;
+			layers_list->tail = element;
+			layers_list->size++;
+		}
+	}
 
-    return layers_list;
+	return layers_list;
 }
 
 void print_map_data(struct map *map) {
@@ -164,21 +164,21 @@ void load_map() {
 
 	json_t *root, *layers, *tilesets, *height, *width;
 	json_t *tileheight, *tilewidth;
-    json_error_t error;
+	json_error_t error;
 
-    // Alloc the map structs
-    map = (struct map *) calloc(1, sizeof(map));
-    sheet = (struct tilesheet *) calloc(1, sizeof(sheet));
+	// Alloc the map structs
+	map = (struct map *) calloc(1, sizeof(map));
+	sheet = (struct tilesheet *) calloc(1, sizeof(sheet));
 
-    map->sheet = sheet;
+	map->sheet = sheet;
 
 	map_json = load_map_file(map_file);
 	root = json_loads(map_json, 0, &error);
 
 	map->width = (int) json_integer_value(json_object_get(root, "width"));
-    map->height = (int) json_integer_value(json_object_get(root, "height"));
-    map->tilewidth = (int) json_integer_value(json_object_get(root, "tilewidth"));
-    map->tileheight = (int) json_integer_value(json_object_get(root, "tileheight"));
+	map->height = (int) json_integer_value(json_object_get(root, "height"));
+	map->tilewidth = (int) json_integer_value(json_object_get(root, "tilewidth"));
+	map->tileheight = (int) json_integer_value(json_object_get(root, "tileheight"));
 
 	if (!root) {
 		fprintf(stderr, "%s error: on line %d: %s\n",
@@ -187,33 +187,33 @@ void load_map() {
 	}
 
 	if (!json_is_object(root)) {
-       	fprintf(stderr, "Is the loaded file really JSON?\n");
-       	goto out;
-    }
+	   	fprintf(stderr, "Is the loaded file really JSON?\n");
+	   	goto out;
+	}
 
-    layers = json_object_get(root, "layers");
-    if (!json_is_array(layers)) {
-    	fprintf(stderr, "%s: error: on line %d: %s\n",
-    		map_file, error.line, error.text);
-    	goto out;
-    }
+	layers = json_object_get(root, "layers");
+	if (!json_is_array(layers)) {
+		fprintf(stderr, "%s: error: on line %d: %s\n",
+			map_file, error.line, error.text);
+		goto out;
+	}
 
-    map->layers = load_layers(layers);
-    if (map->layers == NULL) {
-    	fprintf(stderr, "map is null\n");
-    	goto out;
-    }
+	map->layers = load_layers(layers);
+	if (map->layers == NULL) {
+		fprintf(stderr, "map is null\n");
+		goto out;
+	}
 
-    printf("Number of layers %d\n", map->layers->size);
+	printf("Number of layers %d\n", map->layers->size);
 
-    tilesets = json_object_get(root, "tilesets");
-    if (!json_is_array(tilesets)) {
-    	fprintf(stderr, "%s: error: on line %d: %s\n",
-    		map_file, error.line, error.text);
-    	goto out;
-    }
-    
-    print_map_data(map);
+	tilesets = json_object_get(root, "tilesets");
+	if (!json_is_array(tilesets)) {
+		fprintf(stderr, "%s: error: on line %d: %s\n",
+			map_file, error.line, error.text);
+		goto out;
+	}
+	
+	print_map_data(map);
 
 out:
 	free(map_json);
