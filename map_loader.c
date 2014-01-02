@@ -47,7 +47,7 @@ char *load_map_file(char *map_file) {
  *
  */
 int **allocate_layer_array(int width, int height, json_t *data) {
-	int i, height_count, json_idx = 0;
+	int height_count, json_idx = 0;
 	int **array = (int **) calloc(height, sizeof(int));
 
 	for (height_count = 0; height_count < height; height_count++) {
@@ -62,8 +62,6 @@ int **allocate_layer_array(int width, int height, json_t *data) {
 
 		array[height_count] = tmp;
 	}
-
-
 
 	return array;
 }
@@ -86,18 +84,20 @@ void print_layer(struct layer *current) {
  * Unpacks layers from the JSON data and stores the layers in a linked list
  * 
  */
-struct layers *load_layers(json_t *layers) {
-	int i;
-	struct layers *layers_list = (struct layers *) calloc(1, sizeof(layers_list));
+struct layer **load_layers(json_t *layers, int *num_layers) {
+	int i, array_size;
+	struct layer **the_array;
+
+
+	array_size = json_array_size(layers);
+	*num_layers = array_size;
+
+	the_array = (struct layer **) calloc(array_size, sizeof(the_array));
 
 	for(i = 0; i < json_array_size(layers); i++) {
 		json_t *layer, *height, *width, *visible, *data;
-		struct layers_element *element = (struct layers_element *) calloc(
-			1, sizeof(element)
-			);
 
 		struct layer *current = (struct layer *) calloc(1, sizeof(current));
-		element->current = current;
 
 		layer = json_array_get(layers, i);
 
@@ -108,62 +108,48 @@ struct layers *load_layers(json_t *layers) {
 		current->width = (int) json_integer_value(width);
 
 		visible = json_object_get(layer, "visible");
-		current->visible = (int) json_integer_value(visible);
+		current->visible = (int) json_is_true(visible);
 
 		data = json_object_get(layer, "data");
 		if (json_is_array(data)) {
 			printf("have map data.\n");
 		}
 
-		current->data = allocate_layer_array(aw
-			current->width, current->height, data);
-
-		if (layers_list->head == NULL) {
-			layers_list->head = element;
-			layers_list->tail = element;
-			layers_list->size = 1;
-		}
-
-		else {
-			layers_list->tail->next = element;
-			element->previous = layers_list->tail;
-			layers_list->tail = element;
-			layers_list->size++;
-		}
+		current->data = allocate_layer_array(current->width, current->height, data);
+		the_array[i] = current;
 	}
 
-	return layers_list;
+	return the_array;
 }
 
 void print_map_data(struct map *map) {
 	int i;
-	struct layers_element *current = map->layers->head;
 
 	printf("Width: %d\nHeight: %d\nTile width: %d\nTile height: %d\n",
 		map->width, map->height, map->tilewidth, map->tileheight
 		);
 
-	while (current != NULL) {
-		printf("Width %d\nHeight %d\nVisible %d\n", 
-			current->current->width,
-			current->current->height,
-			current->current->visible
+	for (i = 0; i < map->num_layers; i++) {
+		struct layer *layer  = map->layers[i];
+
+		printf("Width %d\nHeight %d\nVisible %d\n",
+			layer->width,
+			layer->height,
+			layer->visible
 			);
-		print_layer(current->current);
-		current = current->next;
+
+		print_layer(layer);
 	}
 }
 
 
 void load_map() {
 	char *map_json;
-	char *map_file = "test_map.json";
+	char *map_file = "/home/sis13/ownCloud/C/TD_Game/test_map.json";
 	struct map *map;
 	struct tilesheet *sheet;
-	int i;
 
-	json_t *root, *layers, *tilesets, *height, *width;
-	json_t *tileheight, *tilewidth;
+	json_t *root, *layers, *tilesets;
 	json_error_t error;
 
 	// Alloc the map structs
@@ -198,13 +184,12 @@ void load_map() {
 		goto out;
 	}
 
-	map->layers = load_layers(layers);
+	map->layers = load_layers(layers, &map->num_layers);
+
 	if (map->layers == NULL) {
 		fprintf(stderr, "map is null\n");
 		goto out;
 	}
-
-	printf("Number of layers %d\n", map->layers->size);
 
 	tilesets = json_object_get(root, "tilesets");
 	if (!json_is_array(tilesets)) {

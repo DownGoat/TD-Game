@@ -8,18 +8,6 @@ struct layer {
 	int **data;
 };
 
-struct layers {
-	struct layers_element *head;
-	struct layers_element *tail;
-	int size;
-};
-
-struct layers_element {
-	struct layer *current;
-	struct layers_element *next;
-	struct layers_element *previous;
-};
-
 struct tilesheet {
 	char *image;
 	int width;
@@ -33,8 +21,9 @@ struct map {
 	int height;
 	int tilewidth;
 	int tileheight;
+	int num_layers;
 	struct tilesheet *sheet;
-	struct layers *layers;
+	struct layer **layers;
 };
 
 #endif // MAP_H_INCLUDED

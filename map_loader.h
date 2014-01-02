@@ -5,6 +5,7 @@
 
 char *load_map_file(char *map_file);
 void load_map();
-struct layers *load_layers(json_t *layers);
+struct layer **load_layers(json_t *layers, int *num_layers);
+void print_layer(struct layer *current);
 
 #endif // MAP_LOADER_H_INCLUDED
