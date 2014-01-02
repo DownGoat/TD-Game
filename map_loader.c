@@ -48,11 +48,11 @@ char *load_map_file(char *map_file) {
  */
 int **allocate_layer_array(int width, int height, json_t *data) {
 	int height_count, json_idx = 0;
-	int **array = (int **) calloc(height, sizeof(int));
+	int **array = (int **) calloc(height, sizeof(array));
 
 	for (height_count = 0; height_count < height; height_count++) {
 		int width_count;
-		int *tmp = (int *) calloc(width, sizeof(int));
+		int *tmp = (int *) calloc(width, sizeof(array));
 	
 		for (width_count = 0; width_count < width; width_count++) {
 			int a = json_integer_value(json_array_get(data, json_idx));
