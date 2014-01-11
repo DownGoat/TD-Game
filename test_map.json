@@ -53,6 +53,61 @@
             },
          "spacing":0,
          "tileheight":20,
+         "tileproperties":
+            {
+             "0":
+                {
+                 "type":"build"
+                },
+             "1":
+                {
+                 "type":"build"
+                },
+             "10":
+                {
+                 "type":"build"
+                },
+             "11":
+                {
+                 "type":"build"
+                },
+             "12":
+                {
+                 "type":"walk"
+                },
+             "2":
+                {
+                 "type":"build"
+                },
+             "3":
+                {
+                 "type":"build"
+                },
+             "4":
+                {
+                 "type":"build"
+                },
+             "5":
+                {
+                 "type":"build"
+                },
+             "6":
+                {
+                 "type":"goal"
+                },
+             "7":
+                {
+                 "type":"build"
+                },
+             "8":
+                {
+                 "type":"start"
+                },
+             "9":
+                {
+                 "type":"build"
+                }
+            },
          "tilewidth":20
         }],
  "tilewidth":20,

@@ -111,8 +111,8 @@ struct layer **load_layers(json_t *layers, int *num_layers) {
 		current->visible = (int) json_is_true(visible);
 
 		data = json_object_get(layer, "data");
-		if (json_is_array(data)) {
-			printf("have map data.\n");
+		if (!json_is_array(data)) {
+			goto error;
 		}
 
 		current->data = allocate_layer_array(current->width, current->height, data);
@@ -120,6 +120,15 @@ struct layer **load_layers(json_t *layers, int *num_layers) {
 	}
 
 	return the_array;
+
+error:
+	for (; i > 0; i--) {
+		free(the_array[i]);
+	}
+
+	free(the_array);
+
+	return NULL;
 }
 
 void print_map_data(struct map *map) {
@@ -201,5 +210,6 @@ void load_map() {
 	print_map_data(map);
 
 out:
+	json_decref(root);
 	free(map_json);
 }
