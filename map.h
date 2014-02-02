@@ -10,17 +10,17 @@ struct layer {
 
 struct tilesheet {
 	char *image;
-	int width;
-	int height;
-	int tilewidth;
-	int tileheight;
+	int img_width;
+	int img_height;
+	int tile_width;
+	int tile_height;
 };
 
 struct map {
 	int width;
 	int height;
-	int tilewidth;
-	int tileheight;
+	int tile_width;
+	int tile_height;
 	int num_layers;
 	struct tilesheet *sheet;
 	struct layer **layers;

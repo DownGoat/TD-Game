@@ -186,7 +186,7 @@ void print_map_data(struct map *map) {
 	int i;
 
 	printf("Width: %d\nHeight: %d\nTile width: %d\nTile height: %d\n",
-		map->width, map->height, map->tilewidth, map->tileheight
+		map->width, map->height, map->tile_width, map->tile_height
 		);
 
 	for (i = 0; i < map->num_layers; i++) {
@@ -202,6 +202,66 @@ void print_map_data(struct map *map) {
 	}
 }
 
+struct tilesheet *load_tileset(json_t *tilesets) {
+	struct tilesheet *sheet;
+	json_t *tmp, *img_height, *img_width, *tile_width, *tile_height, *filename;
+
+	sheet = (struct tilesheet *) calloc(1, sizeof(sheet));
+
+	tmp = json_array_get(tilesets, 0);
+
+	
+	img_height = json_object_get(tmp, "imageheight");
+	if (!img_height) {
+		fprintf(stderr, "Error getting imageheight value in load_tileset.\n");
+		goto error;
+	}
+
+	sheet->img_height = (int) json_integer_value(img_height);
+
+	
+	img_width = json_object_get(tmp, "imagewidth");
+	if (!img_width) {
+		fprintf(stderr, "Error getting imagewidth value in load_tileset.\n");
+		goto error;
+	}
+
+	sheet->img_width = (int) json_integer_value(img_width);
+
+
+	tile_width = json_object_get(tmp, "tilewidth");
+	if (!tile_width) {
+		fprintf(stderr, "Error getting tile_width value in load_tileset.\n");
+		goto error;
+	}
+
+	sheet->tile_width = (int) json_integer_value(tile_width);
+
+
+	tile_height = json_object_get(tmp, "tileheight");
+	if (!tile_height) {
+		fprintf(stderr, "Error getting tile_height value in load_tileset.\n");
+		goto error;
+	}
+
+	sheet->tile_height = (int) json_integer_value(tile_height);
+
+	
+	filename = json_object_get(tmp, "image");
+	if (!filename) {
+		fprintf(stderr, "Error getting filename value in load_tileset.\n");
+		goto error;
+	}
+
+	sheet->image = (char *) json_string_value(filename);
+
+	return sheet;
+
+error:
+	free(sheet);
+	return NULL;
+}
+
 
 /**
  * This function opens a map file and loads the map data, and populates the map structure 
@@ -215,24 +275,20 @@ struct map *load_map(char *map_file) {
 	char *map_json;
 	//char *map_file = "test_map.json";
 	struct map *map;
-	struct tilesheet *sheet;
 
 	json_t *root, *layers, *tilesets;
 	json_error_t error;
 
 	// Alloc the map structs
 	map = (struct map *) calloc(1, sizeof(map));
-	sheet = (struct tilesheet *) calloc(1, sizeof(sheet));
-
-	map->sheet = sheet;
 
 	map_json = load_map_file(map_file);
 	root = json_loads(map_json, 0, &error);
 
 	map->width = (int) json_integer_value(json_object_get(root, "width"));
 	map->height = (int) json_integer_value(json_object_get(root, "height"));
-	map->tilewidth = (int) json_integer_value(json_object_get(root, "tilewidth"));
-	map->tileheight = (int) json_integer_value(json_object_get(root, "tileheight"));
+	map->tile_width = (int) json_integer_value(json_object_get(root, "tilewidth"));
+	map->tile_height = (int) json_integer_value(json_object_get(root, "tileheight"));
 
 	if (!root) {
 		fprintf(stderr, "%s error: on line %d: %s\n",
@@ -267,6 +323,13 @@ struct map *load_map(char *map_file) {
 	if (!json_is_array(tilesets)) {
 		fprintf(stderr, "%s: error: on line %d: %s\n",
 			map_file, error.line, error.text);
+		map = NULL;
+		goto out;
+	}
+
+	map->sheet = load_tileset(tilesets);
+	if (map->sheet == NULL) {
+		fprintf(stderr, "load_tileset failed\n");
 		map = NULL;
 		goto out;
 	}
