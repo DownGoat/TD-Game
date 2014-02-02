@@ -11,6 +11,10 @@ extern int errno;
 /**
  * This function loads a map file from disc and stores it in a buffer that is
  * returned.
+ *
+ * @param map_file The path of the map file to load.
+ *
+ * @return Return a heap allocated buffer with the data in the map file.
  */
 char *load_map_file(char *map_file) {
 	char *buffer;
@@ -45,14 +49,31 @@ char *load_map_file(char *map_file) {
  * elements, since the json array is a 1d array it has to be read in a special
  * order to convert it to a 2d array.
  *
+ * @param width The width of the map in tiles NOT pixels.
+ * @param height The height of the map in tiles NOT pixels.
+ * @param data The JSON map data.
+ *
+ * @return Returns array of arrays populated with the map data. Returns NULL
+ *		   if something goes wrong.
  */
 int **allocate_layer_array(int width, int height, json_t *data) {
 	int height_count, json_idx = 0;
 	int **array = (int **) calloc(height, sizeof(array));
 
+	if (array == NULL) {
+		fprintf(stderr, "Error allocating array in allocate_layer_array.\n");
+		goto error;
+	}
+
 	for (height_count = 0; height_count < height; height_count++) {
 		int width_count;
 		int *tmp = (int *) calloc(width, sizeof(array));
+
+		if (tmp == NULL) {
+			array = NULL;
+			fprintf(stderr, "Error allocating array in allocate_layer_array.\n");
+			goto error;
+		}
 	
 		for (width_count = 0; width_count < width; width_count++) {
 			int a = json_integer_value(json_array_get(data, json_idx));
@@ -63,6 +84,7 @@ int **allocate_layer_array(int width, int height, json_t *data) {
 		array[height_count] = tmp;
 	}
 
+error:
 	return array;
 }
 
@@ -81,7 +103,12 @@ void print_layer(struct layer *current) {
 }
 
 /**
- * Unpacks layers from the JSON data and stores the layers in a linked list
+ * Unpacks layers from the JSON data and stores the layers in a array.
+ *
+ * @param layers JSON data of the layers.
+ * @param num_layers Pointer to int which will be set to the number of layers.
+ *
+ * @return Returns NULL if something goes wrong, returns array of layers if successful. 
  * 
  */
 struct layer **load_layers(json_t *layers, int *num_layers) {
@@ -102,26 +129,47 @@ struct layer **load_layers(json_t *layers, int *num_layers) {
 		layer = json_array_get(layers, i);
 
 		height = json_object_get(layer, "height");
+		if (!height) {
+			fprintf(stderr, "Error getting height value in load_layers.\n");
+			goto error;
+		}
+
 		current->height = (int) json_integer_value(height);
 
-		width = json_object_get(layer, "height");
+		width = json_object_get(layer, "width");
+		if (!width) {
+			fprintf(stderr, "Error getting width value in load_layers.\n");
+			goto error;
+		}
+
 		current->width = (int) json_integer_value(width);
 
 		visible = json_object_get(layer, "visible");
+		if (!visible) {
+			fprintf(stderr, "Error getting visible value in load_layers.\n");
+			goto error;
+		}
+
 		current->visible = (int) json_is_true(visible);
 
 		data = json_object_get(layer, "data");
 		if (!json_is_array(data)) {
+			fprintf(stderr, "Error getting height data in load_layers.\n");
 			goto error;
 		}
 
 		current->data = allocate_layer_array(current->width, current->height, data);
+		if (current->data == NULL) {
+			fprintf(stderr, "Error allocate_layer_array in load_layers.\n");
+			goto error;
+		}
 		the_array[i] = current;
 	}
 
 	return the_array;
 
 error:
+	// Need to loop over the stuff in the array and free it.
 	for (; i > 0; i--) {
 		free(the_array[i]);
 	}
@@ -131,6 +179,9 @@ error:
 	return NULL;
 }
 
+/**
+ *	This function prints out the data in the map structure. For debugging
+ */
 void print_map_data(struct map *map) {
 	int i;
 
@@ -152,9 +203,17 @@ void print_map_data(struct map *map) {
 }
 
 
-void load_map() {
+/**
+ * This function opens a map file and loads the map data, and populates the map structure 
+ * with the data from the file. 
+ *
+ * @param map_file Path to the map file.
+ *
+ * @return Returns NULL if something goes wrong, returns the map structure if successful.
+ */
+struct map *load_map(char *map_file) {
 	char *map_json;
-	char *map_file = "/home/sis13/ownCloud/C/TD_Game/test_map.json";
+	//char *map_file = "test_map.json";
 	struct map *map;
 	struct tilesheet *sheet;
 
@@ -178,11 +237,13 @@ void load_map() {
 	if (!root) {
 		fprintf(stderr, "%s error: on line %d: %s\n",
 			map_file, error.line, error.text);
+		map = NULL;
 		goto out;
 	}
 
 	if (!json_is_object(root)) {
 	   	fprintf(stderr, "Is the loaded file really JSON?\n");
+	   	map = NULL;
 	   	goto out;
 	}
 
@@ -190,6 +251,7 @@ void load_map() {
 	if (!json_is_array(layers)) {
 		fprintf(stderr, "%s: error: on line %d: %s\n",
 			map_file, error.line, error.text);
+		map = NULL;
 		goto out;
 	}
 
@@ -197,6 +259,7 @@ void load_map() {
 
 	if (map->layers == NULL) {
 		fprintf(stderr, "map is null\n");
+		map = NULL;
 		goto out;
 	}
 
@@ -204,12 +267,14 @@ void load_map() {
 	if (!json_is_array(tilesets)) {
 		fprintf(stderr, "%s: error: on line %d: %s\n",
 			map_file, error.line, error.text);
+		map = NULL;
 		goto out;
 	}
 	
-	print_map_data(map);
 
 out:
 	json_decref(root);
 	free(map_json);
+
+	return map; 
 }
